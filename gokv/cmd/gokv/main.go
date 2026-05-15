@@ -36,6 +36,27 @@ func (s *Store) Get(key string) (string, bool) {
 	value, exists := s.data[key]
 	return value, exists
 }
+
+func (s *Store) Delete(key string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	_, exists := s.data[key]
+	if !exists {
+		return false
+	}
+
+	delete(s.data, key)
+	return true
+}
+
+func (s *Store) Exists(key string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	_, exists := s.data[key]
+	return exists
+}
  
 func main() {
 
@@ -121,6 +142,35 @@ func handleCommand(input string, store *Store) string {
 		}
 
 		return value
+	
+	case "DELETE":
+		if len(parts) < 2 {
+			return "ERR usage: DELETE key"
+		}
+
+		key := parts[1]
+
+		deleted := store.Delete(key)
+		if !deleted {
+			return "(nil)"
+		}
+
+		return "OK"
+
+	case "EXISTS":
+		if len(parts) < 2 {
+			return "ERR usage: EXISTS key"
+		}
+
+		key := parts[1]
+
+		exists := store.Exists(key)
+		if exists {
+			return "1"
+		}
+
+		return "0"
+
 
 	case "QUIT":
 		return "OK"
